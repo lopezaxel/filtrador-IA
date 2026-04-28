@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filtrador IA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="app-layout">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-brand">Filtrador<span>IA</span></div>
+    <div class="topbar-right">
+      <span class="topbar-user" id="topbarUser"></span>
+      <span class="badge" id="topbarBadge"></span>
+      <button class="btn-ghost" style="font-size:12px;padding:6px 12px" onclick="logout()">Salir</button>
+    </div>
+  </header>
+
+  <!-- Nav -->
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('filter', this)">⚡ Filtrar</button>
+    <button class="nav-tab" onclick="showPage('config', this)">⚙ Configuración</button>
+    <button class="nav-tab" onclick="showPage('suscripcion', this)">💳 Suscripción</button>
+  </nav>
+
+  <!-- ─── PAGE: FILTRAR ─── -->
+  <div class="page active" id="page-filter">
+    <div class="filter-layout">
+
+      <!-- Sidebar proveedores -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <span class="sb-label">Proveedores</span>
+          <button class="add-prov-btn" onclick="openAddProvider()">+ Nuevo</button>
+        </div>
+        <div class="prov-list" id="provList"></div>
+      </aside>
+
+      <!-- Panel central -->
+      <div class="filter-panel">
+
+        <!-- Keywords activas -->
+        <div class="filter-section">
+          <div class="filter-section-title">
+            Palabras clave activas — <span id="provSelName">ningún proveedor</span>
+          </div>
+          <div id="provSelBody">
+            <span style="color:var(--muted);font-size:13px">Seleccioná un proveedor del panel izquierdo.</span>
+          </div>
+        </div>
+
+        <!-- Cargar archivo -->
+        <div class="filter-section">
+          <div class="filter-section-title">Cargar lista de proveedor</div>
+          <div class="dropzone" id="dzMain">
+            <div class="dz-icon">📂</div>
+            <div class="dz-title">Arrastrá o hacé clic para cargar</div>
+            <div class="dz-sub">.xlsx / .xls / .csv</div>
+            <div class="dz-file" id="dzFileName"></div>
+          </div>
+          <input type="file" id="fileMain" accept=".xlsx,.xls,.csv" style="display:none">
+        </div>
+
+        <button class="run-btn" id="runBtn" onclick="runFilter()" disabled>⚡ FILTRAR</button>
+
+        <!-- Resultados -->
+        <div class="results-area">
+          <div class="results-header">
+            <span class="results-stats" id="resultsStats">—</span>
+            <button class="btn-ghost" id="exportBtn" onclick="exportExcel()" disabled>⬇ Exportar Excel</button>
+          </div>
+          <div class="results-empty" id="resultsEmpty" style="display:none">
+            Sin resultados para las palabras clave seleccionadas.
+          </div>
+          <div class="results-table-wrap" style="display:none">
+            <table>
+              <thead id="resultsHead"></thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+          </div>
+          <div class="results-empty" id="resultsPlaceholder">
+            Seleccioná un proveedor, cargá tu lista y hacé clic en Filtrar.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: CONFIGURACIÓN ─── -->
+  <div class="page" id="page-config">
+    <div class="config-section">
+      <div class="config-title">Configuración</div>
+
+      <!-- Palabras clave base -->
+      <div class="config-block">
+        <div class="config-block-header">
+          <span class="config-block-title">Palabras clave base <span id="baseCount" style="color:var(--muted);font-weight:400">(0)</span></span>
+          <button class="btn-ghost" style="font-size:12px;padding:5px 10px" onclick="document.getElementById('importBaseFile').click()">📥 Importar</button>
+          <input type="file" id="importBaseFile" accept=".txt,.csv" style="display:none" onchange="handleImportBase(event)">
+        </div>
+        <div class="config-block-body">
+          <div class="kw-input-row">
+            <input type="text" id="baseKwInp" placeholder="Agregar palabra clave...">
+            <button class="btn-primary" style="white-space:nowrap;padding:8px 14px" onclick="addBaseKw()">Agregar</button>
+          </div>
+          <div class="kw-grid" id="baseKwGrid"></div>
+        </div>
+      </div>
+
+      <!-- Proveedores -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Proveedores</span>
+        <button class="btn-primary" style="font-size:12px;padding:6px 12px" onclick="openAddProvider()">+ Nuevo proveedor</button>
+      </div>
+      <div id="provEditorGrid"></div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: SUSCRIPCIÓN ─── -->
+  <div class="page" id="page-suscripcion">
+    <div class="sub-section">
+      <div class="sub-card">
+        <div class="sub-card-title">Tu suscripción</div>
+        <div class="sub-card-desc">Gestioná tu plan y datos de pago.</div>
+        <div class="sub-status-row">
+          <span style="font-size:13px;color:var(--muted)">Estado:</span>
+          <span class="badge" id="subBadge">—</span>
+          <span id="subExpiry" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+        <div id="whopCheckoutContainer"></div>
+        <div id="subManageArea" style="display:none">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Tu suscripción está activa. Podés cancelarla en cualquier momento.</p>
+          <button class="btn-danger" onclick="cancelSubscription()">Cancelar suscripción</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MODAL: Proveedor ─── -->
+  <div class="modal-overlay" id="provModal">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle">NUEVO PROVEEDOR</div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Nombre del proveedor</label>
+        <input type="text" id="modalProvName" placeholder="Ej: MOTORCRAFT">
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label>Palabras clave adicionales</label>
+        <div class="kw-input-row">
+          <input type="text" id="modalKwInp" placeholder="Agregar palabra clave...">
+          <button class="btn-primary" style="white-space:nowrap;padding:8px 14px" onclick="addModalKw()">+</button>
+        </div>
+        <div class="kw-grid" id="modalKwGrid"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveProvider()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/providers.js"></script>
+  <script src="js/filter.js"></script>
+  <script>
+    let currentProfile = null;
+
+    (async () => {
+      const session = await requireAuth();
+      if (!session) return;
+
+      currentProfile = await getProfile(session.user.id);
+      if (!currentProfile) { await logout(); return; }
+
+      document.getElementById('topbarUser').textContent = session.user.email;
+
+      const org = currentProfile.organizations;
+      const badgeEl = document.getElementById('topbarBadge');
+      const subBadge = document.getElementById('subBadge');
+      const subExpiry = document.getElementById('subExpiry');
+      const subManage = document.getElementById('subManageArea');
+      const checkoutContainer = document.getElementById('whopCheckoutContainer');
+
+      if (org) {
+        const plan = org.plan;
+        badgeEl.textContent = plan === 'active' ? 'Activo' : plan === 'trial' ? 'Trial' : 'Inactivo';
+        badgeEl.className = `badge badge-${plan === 'active' ? 'active' : plan === 'trial' ? 'trial' : 'inactive'}`;
+        subBadge.textContent = badgeEl.textContent;
+        subBadge.className = badgeEl.className;
+
+        if (plan === 'trial' && org.trial_expires_at) {
+          const d = new Date(org.trial_expires_at);
+          subExpiry.textContent = `Expira el ${d.toLocaleDateString('es-AR')}`;
+        }
+
+        if (plan === 'active') {
+          subManage.style.display = 'block';
+          checkoutContainer.style.display = 'none';
+        } else {
+          renderWhopCheckout(checkoutContainer);
+        }
+      }
+
+      await initProviders(org.id);
+      initFilter();
+
+      document.getElementById('baseKwInp').addEventListener('keydown', e => { if (e.key === 'Enter') addBaseKw(); });
+      document.getElementById('modalKwInp').addEventListener('keydown', e => { if (e.key === 'Enter') addModalKw(); });
+    })();
+
+    function showPage(id, tab) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('page-' + id).classList.add('active');
+      if (tab) tab.classList.add('active');
+    }
+
+    function renderWhopCheckout(container) {
+      container.innerHTML = `
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+          Activá tu suscripción para seguir usando Filtrador IA después del período de prueba.
+        </p>
+        <div id="whop-checkout-embed"></div>`;
+
+      const script = document.createElement('script');
+      script.src = 'https://whop.com/embed/checkout.js';
+      script.setAttribute('data-plan-id', 'WHOP_PLAN_ID');
+      script.setAttribute('data-container', 'whop-checkout-embed');
+      script.setAttribute('data-on-complete', 'onWhopComplete');
+      document.body.appendChild(script);
+    }
+
+    async function onWhopComplete(result) {
+      showToast('¡Pago exitoso! Tu cuenta se activará en breve.', 'success');
+    }
+
+    async function cancelSubscription() {
+      if (!confirm('¿Seguro que querés cancelar tu suscripción?')) return;
+      showToast('Contactá a soporte para cancelar tu suscripción.', 'info');
+    }
+
+    function handleImportBase(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const words = ev.target.result.split(/[\n,;]+/).map(w => w.trim().toUpperCase()).filter(Boolean);
+        words.forEach(w => addBaseKw(w));
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    }
+  </script>
+</body>
+</html>
